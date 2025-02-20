@@ -175,4 +175,4 @@ cython_debug/
 *.csv
 
 
-daniel_test/key.txt
+gpt_model/key.txt
