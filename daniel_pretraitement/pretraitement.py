@@ -1,41 +1,32 @@
 import pandas as pd
-from deep_translator import GoogleTranslator
+import re
 
 def pretraiter_donnees(fichier_csv):
-    # Charger les données
+    # Charger les données brutes
     df = pd.read_csv(fichier_csv, low_memory=False)
 
-    # Sélectionner uniquement les colonnes importantes
-    colonnes_utiles = ["product_name", "ingredients_text", "allergens", "brands", "countries"]
-    df = df[colonnes_utiles].copy()
+    # Vérifier la présence des colonnes nécessaires
+    colonnes_requises = ["product_name", "ingredients_text", "allergens", "brands", "countries"]
+    if not all(col in df.columns for col in colonnes_requises):
+        print("❌ Erreur : Colonnes essentielles manquantes.")
+        return
 
-    # Suppression des valeurs nulles
-    df.dropna(subset=["ingredients_text"], inplace=True)
+    # Convertir en minuscules pour uniformiser
+    df["ingredients_text"] = df["ingredients_text"].astype(str).str.lower()
+    df["allergens"] = df["allergens"].astype(str).str.lower()
 
-    # Convertir tout en minuscules pour uniformiser
-    df["ingredients_text"] = df["ingredients_text"].str.lower()
-    df["allergens"] = df["allergens"].str.lower()
+    # Nettoyer les caractères spéciaux dans les ingrédients et supprimer les chiffres inutiles
+    df["ingredients_text"] = df["ingredients_text"].apply(lambda x: re.sub(r"[^\w\s,]", "", x))  # Supprimer caractères spéciaux
+    df["ingredients_text"] = df["ingredients_text"].apply(lambda x: re.sub(r"\d+(\.\d+)?", "", x).strip())  # Supprimer chiffres
 
-    # Nettoyer les caractères spéciaux des ingrédients
-    df["ingredients_text"] = df["ingredients_text"].str.replace(r"[^\w\s,]", "", regex=True)
+    # Nettoyage des allergènes (suppression des préfixes type "en:")
+    df["allergens"] = df["allergens"].apply(lambda x: re.sub(r"[a-z]{2}:", "", x))
 
-    # Supprimer les doublons
-    df.drop_duplicates(inplace=True)
-
-    # Traduire les ingrédients en anglais si nécessaire
-    def traduire_ingredients(ingredients):
-        if any(char.isalpha() and char not in "abcdefghijklmnopqrstuvwxyz " for char in ingredients.lower()):
-            return GoogleTranslator(source='auto', target='en').translate(ingredients)
-        return ingredients
-
-    df["ingredients_text"] = df["ingredients_text"].apply(traduire_ingredients)
-
-    # Nettoyage des allergènes (suppression de "en:" et séparation propre)
-    df["allergens"] = df["allergens"].apply(lambda x: x.replace("en:", "").replace(",", ", ") if pd.notna(x) else "No allergens detected")
-
-    # Sauvegarde du fichier nettoyé
+    # Sauvegarder les données nettoyées
     df.to_csv("openfoodfacts_preprocessed.csv", index=False)
-    print("✅ Données prétraitées et enregistrées sous 'openfoodfacts_preprocessed.csv'")
+    print("✅ Données prétraitées enregistrées sous 'openfoodfacts_preprocessed.csv'")
 
-# Exécuter le prétraitement
+    return df
+
+# Exécution du script
 pretraiter_donnees("openfoodfacts_sample.csv")
