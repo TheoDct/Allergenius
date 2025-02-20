@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détection des Allergènes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
+        form {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            padding: 10px;
+            width: 250px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            text-align: left;
+        }
+        .allergen-list {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            width: 45%;
+        }
+        .confirmed {
+            border-left: 5px solid red;
+        }
+        .potential {
+            border-left: 5px solid orange;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .confirmed li {
+            background: #ffdddd;
+            color: #d9534f;
+        }
+        .potential li {
+            background: #ffefc7;
+            color: #b8860b;
+        }
+    </style>
+    <script>
+        async function fetchAllergens() {
+            let food = document.getElementById("food").value.trim();
+            let resultDiv = document.getElementById("result");
+
+            if (!food) {
+                resultDiv.innerHTML = "<p style='color: red;'>Veuillez entrer un aliment.</p>";
+                return;
+            }
+
+            try {
+                let response = await fetch(`http://127.0.0.1:5000/get_allergens?food=${encodeURIComponent(food)}`);
+                let data = await response.json();
+
+                resultDiv.innerHTML = `<h2>Résultat pour "${food}"</h2>
+                <div class="allergen-list">
+                    <div class="card confirmed">
+                        <h3>Allergènes confirmés</h3>
+                        ${data.allergens_confirmed.length > 0 
+                            ? `<ul>${data.allergens_confirmed.map(a => `<li>${a}</li>`).join("")}</ul>` 
+                            : "<p>Aucun allergène confirmé.</p>"}
+                    </div>
+                    <div class="card potential">
+                        <h3>Allergènes potentiels</h3>
+                        ${data.allergens_potential.length > 0 
+                            ? `<ul>${data.allergens_potential.map(a => `<li>${a}</li>`).join("")}</ul>` 
+                            : "<p>Aucun allergène potentiel.</p>"}
+                    </div>
+                </div>`;
+            } catch (error) {
+                resultDiv.innerHTML = "<p style='color: red;'>Erreur lors de la récupération des données.</p>";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Recherche d'Allergènes</h1>
+    <input type="text" id="food" placeholder="Entrez un aliment...">
+    <button onclick="fetchAllergens()">Rechercher</button>
+    <div id="result"></div>
+</body>
+</html>
