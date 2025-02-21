@@ -6,53 +6,87 @@
     <title>Détection des Allergènes</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
         h1 {
             margin-top: 20px;
             color: #333;
+            font-size: 28px;
         }
-        form {
-            margin: 20px;
-            padding: 20px;
+        .container {
             background: white;
-            display: inline-block;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 80%;
+            max-width: 500px;
         }
         input, textarea {
-            padding: 10px;
-            width: 250px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin: 10px;
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             font-size: 16px;
+            box-shadow: inset 0px 2px 4px rgba(0, 0, 0, 0.05);
         }
         button {
-            padding: 10px 15px;
+            width: 100%;
+            padding: 12px;
             border: none;
-            background-color: #007BFF;
+            background: #007BFF;
             color: white;
-            border-radius: 5px;
-            cursor: pointer;
             font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s ease;
         }
         button:hover {
-            background-color: #0056b3;
+            background: #0056b3;
         }
-        .result {
+        .result-container {
             margin-top: 20px;
             padding: 20px;
             background: white;
-            display: inline-block;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            width: 60%;
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 500px;
             text-align: left;
+        }
+        .result-container h2 {
+            margin-top: 0;
+            font-size: 22px;
+            color: #333;
+        }
+        .allergen-list {
+            list-style: none;
+            padding: 0;
+        }
+        .allergen-list li {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .confirmed li {
+            background: #ffdddd;
+            color: #d9534f;
+        }
+        .potential li {
+            background: #ffefc7;
+            color: #b8860b;
         }
     </style>
     <script>
@@ -68,9 +102,19 @@
             let response = await fetch(`http://127.0.0.1:5000/get_allergens?food=${encodeURIComponent(food)}`);
             let data = await response.json();
 
-            resultDiv.innerHTML = `<h2>Résultat pour "${food}"</h2>
-            <p><strong>Allergènes confirmés :</strong> ${data.allergens_confirmed.join(", ") || "Aucun"}</p>
-            <p><strong>Allergènes potentiels :</strong> ${data.allergens_potential.join(", ") || "Aucun"}</p>`;
+            resultDiv.innerHTML = `
+                <h2>Résultat pour "${food}"</h2>
+                <div class="result-container">
+                    <h3>Allergènes confirmés</h3>
+                    ${data.allergens_confirmed.length > 0 
+                        ? `<ul class="allergen-list confirmed">${data.allergens_confirmed.map(a => `<li>${a}</li>`).join("")}</ul>` 
+                        : "<p>Aucun allergène confirmé.</p>"}
+                    
+                    <h3>Allergènes potentiels</h3>
+                    ${data.allergens_potential.length > 0 
+                        ? `<ul class="allergen-list potential">${data.allergens_potential.map(a => `<li>${a}</li>`).join("")}</ul>` 
+                        : "<p>Aucun allergène potentiel.</p>"}
+                </div>`;
         }
 
         async function fetchAllergensML() {
@@ -89,21 +133,28 @@
             });
 
             let data = await response.json();
-            resultDiv.innerHTML = `<h2>Résultat pour votre recette</h2>
-            <p><strong>Allergènes prédits :</strong> ${data.Predicted_Allergens.join(", ") || "Aucun"}</p>`;
+            resultDiv.innerHTML = `
+                <h2>Résultat pour votre recette</h2>
+                <div class="result-container">
+                    <h3>Allergènes prédits</h3>
+                    ${data.Predicted_Allergens.length > 0 
+                        ? `<ul class="allergen-list confirmed">${data.Predicted_Allergens.map(a => `<li>${a}</li>`).join("")}</ul>` 
+                        : "<p>Aucun allergène détecté.</p>"}
+                </div>`;
         }
     </script>
 </head>
 <body>
     <h1>Détection des Allergènes</h1>
+    <div class="container">
+        <input type="text" id="food" placeholder="Entrez un aliment...">
+        <button onclick="fetchAllergensGPT()">Rechercher avec GPT</button>
 
-    <input type="text" id="food" placeholder="Entrez un aliment...">
-    <button onclick="fetchAllergensGPT()">Rechercher avec GPT</button>
+        <br><br>
 
-    <br><br>
-
-    <textarea id="recipe" placeholder="Entrez une recette complète..."></textarea>
-    <button onclick="fetchAllergensML()">Rechercher avec l'IA locale</button>
+        <textarea id="recipe" placeholder="Entrez une recette complète..."></textarea>
+        <button onclick="fetchAllergensML()">Rechercher avec l'IA locale</button>
+    </div>
 
     <div id="result"></div>
 </body>
