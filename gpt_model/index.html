@@ -24,12 +24,12 @@
             border-radius: 8px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        input {
+        input, textarea {
             padding: 10px;
             width: 250px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            margin-right: 10px;
+            margin: 10px;
             font-size: 16px;
         }
         button {
@@ -54,45 +54,9 @@
             width: 60%;
             text-align: left;
         }
-        .allergen-list {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        .card {
-            background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            width: 45%;
-        }
-        .confirmed {
-            border-left: 5px solid red;
-        }
-        .potential {
-            border-left: 5px solid orange;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .confirmed li {
-            background: #ffdddd;
-            color: #d9534f;
-        }
-        .potential li {
-            background: #ffefc7;
-            color: #b8860b;
-        }
     </style>
     <script>
-        async function fetchAllergens() {
+        async function fetchAllergensGPT() {
             let food = document.getElementById("food").value.trim();
             let resultDiv = document.getElementById("result");
 
@@ -101,35 +65,46 @@
                 return;
             }
 
-            try {
-                let response = await fetch(`http://127.0.0.1:5000/get_allergens?food=${encodeURIComponent(food)}`);
-                let data = await response.json();
+            let response = await fetch(`http://127.0.0.1:5000/get_allergens?food=${encodeURIComponent(food)}`);
+            let data = await response.json();
 
-                resultDiv.innerHTML = `<h2>Résultat pour "${food}"</h2>
-                <div class="allergen-list">
-                    <div class="card confirmed">
-                        <h3>Allergènes confirmés</h3>
-                        ${data.allergens_confirmed.length > 0 
-                            ? `<ul>${data.allergens_confirmed.map(a => `<li>${a}</li>`).join("")}</ul>` 
-                            : "<p>Aucun allergène confirmé.</p>"}
-                    </div>
-                    <div class="card potential">
-                        <h3>Allergènes potentiels</h3>
-                        ${data.allergens_potential.length > 0 
-                            ? `<ul>${data.allergens_potential.map(a => `<li>${a}</li>`).join("")}</ul>` 
-                            : "<p>Aucun allergène potentiel.</p>"}
-                    </div>
-                </div>`;
-            } catch (error) {
-                resultDiv.innerHTML = "<p style='color: red;'>Erreur lors de la récupération des données.</p>";
+            resultDiv.innerHTML = `<h2>Résultat pour "${food}"</h2>
+            <p><strong>Allergènes confirmés :</strong> ${data.allergens_confirmed.join(", ") || "Aucun"}</p>
+            <p><strong>Allergènes potentiels :</strong> ${data.allergens_potential.join(", ") || "Aucun"}</p>`;
+        }
+
+        async function fetchAllergensML() {
+            let recipe = document.getElementById("recipe").value.trim();
+            let resultDiv = document.getElementById("result");
+
+            if (!recipe) {
+                resultDiv.innerHTML = "<p style='color: red;'>Veuillez entrer une recette.</p>";
+                return;
             }
+
+            let response = await fetch("http://127.0.0.1:5000/predict_recipe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ recipe })
+            });
+
+            let data = await response.json();
+            resultDiv.innerHTML = `<h2>Résultat pour votre recette</h2>
+            <p><strong>Allergènes prédits :</strong> ${data.Predicted_Allergens.join(", ") || "Aucun"}</p>`;
         }
     </script>
 </head>
 <body>
-    <h1>Recherche d'Allergènes</h1>
+    <h1>Détection des Allergènes</h1>
+
     <input type="text" id="food" placeholder="Entrez un aliment...">
-    <button onclick="fetchAllergens()">Rechercher</button>
+    <button onclick="fetchAllergensGPT()">Rechercher avec GPT</button>
+
+    <br><br>
+
+    <textarea id="recipe" placeholder="Entrez une recette complète..."></textarea>
+    <button onclick="fetchAllergensML()">Rechercher avec l'IA locale</button>
+
     <div id="result"></div>
 </body>
 </html>
